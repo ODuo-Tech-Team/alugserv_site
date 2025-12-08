@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Categorias - AlugServ Admin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/admin.css">
+    <link rel="icon" type="image/png" href="../assets/images/logo.png">
+</head>
+<body class="admin-layout">
+    <!-- Sidebar -->
+    <aside class="admin-sidebar">
+        <div class="sidebar-header">
+            <img src="../assets/images/logo.png" alt="AlugServ" class="sidebar-logo">
+            <h2 class="sidebar-title">AlugServ Admin</h2>
+        </div>
+        <nav>
+            <ul class="sidebar-menu">
+                <li><a href="index.html">
+                    <svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                    </svg>
+                    Dashboard
+                </a></li>
+                <li><a href="equipments.html">
+                    <svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                    </svg>
+                    Equipamentos
+                </a></li>
+                <li><a href="categories.html" class="active">
+                    <svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+                    </svg>
+                    Categorias
+                </a></li>
+                <li><a href="settings.html">
+                    <svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    </svg>
+                    Configurações
+                </a></li>
+            </ul>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="admin-main">
+        <header class="admin-header">
+            <h1>Categorias</h1>
+            <div class="admin-user">
+                <span class="admin-user-name" id="userName">Admin</span>
+                <button class="btn btn-secondary btn-sm" id="logoutBtn">Sair</button>
+            </div>
+        </header>
+
+        <div class="admin-content">
+            <div id="alertContainer"></div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Lista de Categorias</h2>
+                    <button class="btn btn-primary" onclick="openModal('categoryModal')">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                        </svg>
+                        Nova Categoria
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Nome</th>
+                                    <th>Slug</th>
+                                    <th>Equipamentos</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="categoriesBody">
+                                <tr>
+                                    <td colspan="5" class="text-center">Carregando...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal -->
+    <div class="modal" id="categoryModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="modalTitle">Nova Categoria</h3>
+                <button class="modal-close" onclick="closeModal('categoryModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="categoryForm">
+                    <input type="hidden" id="categoryId">
+
+                    <div class="form-group">
+                        <label for="name">Nome *</label>
+                        <input type="text" id="name" name="name" required onkeyup="generateSlug()">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="slug">Slug</label>
+                        <input type="text" id="slug" name="slug">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="description">Descrição</label>
+                        <textarea id="description" name="description" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('categoryModal')">Cancelar</button>
+                <button class="btn btn-primary" onclick="saveCategory()">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/admin.js"></script>
+    <script>
+        requireAuth();
+
+        // Generate slug from name
+        function generateSlug() {
+            const name = document.getElementById('name').value;
+            document.getElementById('slug').value = createSlug(name);
+        }
+
+        // Load categories
+        async function loadCategories() {
+            try {
+                const data = await apiRequest('categories.php');
+                const tbody = document.getElementById('categoriesBody');
+
+                if (data.categories && data.categories.length > 0) {
+                    tbody.innerHTML = data.categories.map(item => `
+                        <tr>
+                            <td>${item.id}</td>
+                            <td>${item.name}</td>
+                            <td>${item.slug || '-'}</td>
+                            <td>${item.equipment_count || 0}</td>
+                            <td>
+                                <button class="btn btn-sm btn-warning" onclick="editCategory(${item.id})">Editar</button>
+                                <button class="btn btn-sm btn-danger" data-action="delete" data-id="${item.id}" data-type="categories">Excluir</button>
+                            </td>
+                        </tr>
+                    `).join('');
+                    initializeTableActions();
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-center">Nenhuma categoria cadastrada</td></tr>';
+                }
+            } catch (error) {
+                showAlert('Erro ao carregar categorias', 'error');
+            }
+        }
+
+        // Edit category
+        async function editCategory(id) {
+            try {
+                const data = await apiRequest(`categories.php?id=${id}`);
+                const item = data.category;
+
+                document.getElementById('modalTitle').textContent = 'Editar Categoria';
+                document.getElementById('categoryId').value = item.id;
+                document.getElementById('name').value = item.name;
+                document.getElementById('slug').value = item.slug || '';
+                document.getElementById('description').value = item.description || '';
+
+                openModal('categoryModal');
+            } catch (error) {
+                showAlert('Erro ao carregar categoria', 'error');
+            }
+        }
+
+        // Save category
+        async function saveCategory() {
+            const id = document.getElementById('categoryId').value;
+            const formData = {
+                name: document.getElementById('name').value,
+                slug: document.getElementById('slug').value,
+                description: document.getElementById('description').value
+            };
+
+            try {
+                const method = id ? 'PUT' : 'POST';
+                const endpoint = id ? `categories.php?id=${id}` : 'categories.php';
+
+                await apiRequest(endpoint, {
+                    method,
+                    body: JSON.stringify(formData)
+                });
+
+                showAlert('Categoria salva com sucesso!', 'success');
+                closeModal('categoryModal');
+                resetForm();
+                loadCategories();
+            } catch (error) {
+                showAlert(error.message, 'error');
+            }
+        }
+
+        // Reset form
+        function resetForm() {
+            document.getElementById('categoryForm').reset();
+            document.getElementById('categoryId').value = '';
+            document.getElementById('modalTitle').textContent = 'Nova Categoria';
+        }
+
+        // Initialize
+        loadCategories();
+    </script>
+</body>
+</html>
