@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Categorias - AlugServ Admin</title>
+    <title>Usuários - AlugServ Admin</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -31,13 +31,13 @@
                     </svg>
                     Equipamentos
                 </a></li>
-                <li><a href="categories.html" class="active">
+                <li><a href="categories.html">
                     <svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
                     </svg>
                     Categorias
                 </a></li>
-                <li><a href="users.html">
+                <li><a href="users.html" class="active">
                     <svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
                     </svg>
@@ -57,7 +57,7 @@
     <!-- Main Content -->
     <main class="admin-main">
         <header class="admin-header">
-            <h1>Categorias</h1>
+            <h1>Usuários</h1>
             <div class="admin-user">
                 <span class="admin-user-name" id="userName">Admin</span>
                 <button class="btn btn-secondary btn-sm" id="logoutBtn">Sair</button>
@@ -69,12 +69,12 @@
 
             <div class="card">
                 <div class="card-header">
-                    <h2 class="card-title">Lista de Categorias</h2>
-                    <button class="btn btn-primary" onclick="openModal('categoryModal')">
+                    <h2 class="card-title">Lista de Usuários</h2>
+                    <button class="btn btn-primary" onclick="openCreateModal()">
                         <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                         </svg>
-                        Nova Categoria
+                        Novo Usuário
                     </button>
                 </div>
                 <div class="card-body">
@@ -84,14 +84,17 @@
                                 <tr>
                                     <th>ID</th>
                                     <th>Nome</th>
-                                    <th>Slug</th>
-                                    <th>Equipamentos</th>
+                                    <th>Username</th>
+                                    <th>Email</th>
+                                    <th>Perfil</th>
+                                    <th>Status</th>
+                                    <th>Último Login</th>
                                     <th>Ações</th>
                                 </tr>
                             </thead>
-                            <tbody id="categoriesBody">
+                            <tbody id="usersBody">
                                 <tr>
-                                    <td colspan="5" class="text-center">Carregando...</td>
+                                    <td colspan="8" class="text-center">Carregando...</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -102,35 +105,57 @@
     </main>
 
     <!-- Modal -->
-    <div class="modal" id="categoryModal">
+    <div class="modal" id="userModal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 class="modal-title" id="modalTitle">Nova Categoria</h3>
-                <button class="modal-close" onclick="closeModal('categoryModal')">&times;</button>
+                <h3 class="modal-title" id="modalTitle">Novo Usuário</h3>
+                <button class="modal-close" onclick="closeModal('userModal')">&times;</button>
             </div>
             <div class="modal-body">
-                <form id="categoryForm">
-                    <input type="hidden" id="categoryId">
+                <form id="userForm">
+                    <input type="hidden" id="userId">
 
                     <div class="form-group">
                         <label for="name">Nome *</label>
-                        <input type="text" id="name" name="name" required onkeyup="generateSlug()">
+                        <input type="text" id="name" name="name" required>
                     </div>
 
                     <div class="form-group">
-                        <label for="slug">Slug</label>
-                        <input type="text" id="slug" name="slug">
+                        <label for="username">Username *</label>
+                        <input type="text" id="username" name="username" required>
                     </div>
 
                     <div class="form-group">
-                        <label for="description">Descrição</label>
-                        <textarea id="description" name="description" rows="3"></textarea>
+                        <label for="email">Email *</label>
+                        <input type="email" id="email" name="email" required>
+                    </div>
+
+                    <div class="form-group" id="passwordGroup">
+                        <label for="password">Senha *</label>
+                        <input type="password" id="password" name="password" minlength="6">
+                        <small class="form-text" id="passwordHelp" style="display:none;">Deixe em branco para manter a senha atual</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="role">Perfil *</label>
+                        <select id="role" name="role" required>
+                            <option value="admin">Administrador</option>
+                            <option value="editor">Editor</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="status">Status</label>
+                        <select id="status" name="status">
+                            <option value="active">Ativo</option>
+                            <option value="inactive">Inativo</option>
+                        </select>
                     </div>
                 </form>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="closeModal('categoryModal')">Cancelar</button>
-                <button class="btn btn-primary" onclick="saveCategory()">Salvar</button>
+                <button class="btn btn-secondary" onclick="closeModal('userModal')">Cancelar</button>
+                <button class="btn btn-primary" onclick="saveUser()">Salvar</button>
             </div>
         </div>
     </div>
@@ -139,80 +164,97 @@
     <script>
         requireAuth();
 
-        // Generate slug from name
-        function generateSlug() {
-            const name = document.getElementById('name').value;
-            document.getElementById('slug').value = createSlug(name);
-        }
-
-        // Load categories
-        async function loadCategories() {
+        // Load users
+        async function loadUsers() {
             try {
-                const data = await apiRequest('categories.php');
-                const tbody = document.getElementById('categoriesBody');
+                const data = await apiRequest('users.php');
+                const tbody = document.getElementById('usersBody');
 
-                if (data.categories && data.categories.length > 0) {
-                    tbody.innerHTML = data.categories.map(item => `
+                if (data.users && data.users.length > 0) {
+                    tbody.innerHTML = data.users.map(item => `
                         <tr>
                             <td>${item.id}</td>
                             <td>${item.name}</td>
-                            <td>${item.slug || '-'}</td>
-                            <td>${item.equipment_count || 0}</td>
+                            <td>${item.username}</td>
+                            <td>${item.email}</td>
+                            <td><span class="badge badge-${item.role === 'admin' ? 'primary' : 'info'}">${item.role === 'admin' ? 'Admin' : 'Editor'}</span></td>
+                            <td><span class="badge badge-${item.status === 'active' ? 'success' : 'danger'}">${item.status === 'active' ? 'Ativo' : 'Inativo'}</span></td>
+                            <td>${item.last_login ? formatDate(item.last_login) : 'Nunca'}</td>
                             <td>
-                                <button class="btn btn-sm btn-warning" onclick="editCategory(${item.id})">Editar</button>
-                                <button class="btn btn-sm btn-danger" data-action="delete" data-id="${item.id}" data-type="categories">Excluir</button>
+                                <button class="btn btn-sm btn-warning" onclick="editUser(${item.id})">Editar</button>
+                                <button class="btn btn-sm btn-danger" data-action="delete" data-id="${item.id}" data-type="users">Excluir</button>
                             </td>
                         </tr>
                     `).join('');
                     initializeTableActions();
                 } else {
-                    tbody.innerHTML = '<tr><td colspan="5" class="text-center">Nenhuma categoria cadastrada</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="8" class="text-center">Nenhum usuário cadastrado</td></tr>';
                 }
             } catch (error) {
-                showAlert('Erro ao carregar categorias', 'error');
+                showAlert('Erro ao carregar usuários', 'error');
             }
         }
 
-        // Edit category
-        async function editCategory(id) {
+        // Open create modal
+        function openCreateModal() {
+            resetForm();
+            document.getElementById('password').required = true;
+            document.getElementById('passwordHelp').style.display = 'none';
+            openModal('userModal');
+        }
+
+        // Edit user
+        async function editUser(id) {
             try {
-                const data = await apiRequest(`categories.php?id=${id}`);
-                const item = data.category;
+                const data = await apiRequest(`users.php?id=${id}`);
+                const item = data.user;
 
-                document.getElementById('modalTitle').textContent = 'Editar Categoria';
-                document.getElementById('categoryId').value = item.id;
+                document.getElementById('modalTitle').textContent = 'Editar Usuário';
+                document.getElementById('userId').value = item.id;
                 document.getElementById('name').value = item.name;
-                document.getElementById('slug').value = item.slug || '';
-                document.getElementById('description').value = item.description || '';
+                document.getElementById('username').value = item.username;
+                document.getElementById('email').value = item.email;
+                document.getElementById('password').value = '';
+                document.getElementById('password').required = false;
+                document.getElementById('passwordHelp').style.display = 'block';
+                document.getElementById('role').value = item.role;
+                document.getElementById('status').value = item.status;
 
-                openModal('categoryModal');
+                openModal('userModal');
             } catch (error) {
-                showAlert('Erro ao carregar categoria', 'error');
+                showAlert('Erro ao carregar usuário', 'error');
             }
         }
 
-        // Save category
-        async function saveCategory() {
-            const id = document.getElementById('categoryId').value;
+        // Save user
+        async function saveUser() {
+            const id = document.getElementById('userId').value;
             const formData = {
                 name: document.getElementById('name').value,
-                slug: document.getElementById('slug').value,
-                description: document.getElementById('description').value
+                username: document.getElementById('username').value,
+                email: document.getElementById('email').value,
+                role: document.getElementById('role').value,
+                status: document.getElementById('status').value
             };
+
+            const password = document.getElementById('password').value;
+            if (password) {
+                formData.password = password;
+            }
 
             try {
                 const method = id ? 'PUT' : 'POST';
-                const endpoint = id ? `categories.php?id=${id}` : 'categories.php';
+                const endpoint = id ? `users.php?id=${id}` : 'users.php';
 
                 await apiRequest(endpoint, {
                     method,
                     body: JSON.stringify(formData)
                 });
 
-                showAlert('Categoria salva com sucesso!', 'success');
-                closeModal('categoryModal');
+                showAlert('Usuário salvo com sucesso!', 'success');
+                closeModal('userModal');
                 resetForm();
-                loadCategories();
+                loadUsers();
             } catch (error) {
                 showAlert(error.message, 'error');
             }
@@ -220,13 +262,15 @@
 
         // Reset form
         function resetForm() {
-            document.getElementById('categoryForm').reset();
-            document.getElementById('categoryId').value = '';
-            document.getElementById('modalTitle').textContent = 'Nova Categoria';
+            document.getElementById('userForm').reset();
+            document.getElementById('userId').value = '';
+            document.getElementById('modalTitle').textContent = 'Novo Usuário';
+            document.getElementById('password').required = true;
+            document.getElementById('passwordHelp').style.display = 'none';
         }
 
         // Initialize
-        loadCategories();
+        loadUsers();
     </script>
 </body>
 </html>

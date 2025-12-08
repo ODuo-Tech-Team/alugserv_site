@@ -3,6 +3,11 @@
  * Funções para exibir produtos e categorias nas páginas
  */
 
+// Configurações de contato
+const CONTACT_PHONE = '5519994451111';
+const WHATSAPP_LOUVEIRA = '5519994451111';
+const WHATSAPP_JUNDIAI = '5511964801527';
+
 // ===== RENDERIZAÇÃO DE CATEGORIAS =====
 
 /**
@@ -35,7 +40,7 @@ function renderCategoriesGrid(categories, containerId = 'categoriesGrid') {
             </div>
             <div class="category-info">
                 <h3 class="category-name">${category.name}</h3>
-                ${category.count > 0 ? `<span class="category-count">${category.count} equipamento${category.count !== 1 ? 's' : ''}</span>` : ''}
+                ${category.equipment_count > 0 ? `<span class="category-count">${category.equipment_count} equipamento${category.equipment_count !== 1 ? 's' : ''}</span>` : ''}
             </div>
         </a>
     `).join('');
@@ -75,20 +80,23 @@ function renderProductCard(product) {
     const description = truncateText(stripHtml(product.short_description || product.description), 80);
 
     return `
-        <a href="produto.html?id=${product.id}" class="product-card">
-            <div class="product-image">
-                <img src="${imageUrl}" alt="${product.name}" loading="lazy" onerror="this.src='${getPlaceholderImage()}'">
-                ${!product.in_stock ? '<span class="product-badge out-of-stock">Indisponível</span>' : ''}
-            </div>
-            <div class="product-info">
-                <h3 class="product-title">${product.name}</h3>
-                ${description ? `<p class="product-description">${description}</p>` : ''}
-                <div class="product-footer">
-                    <span class="product-price">${formatPrice(product.price)}</span>
-                    ${product.category ? `<span class="product-category">${product.category.name}</span>` : ''}
+        <div class="product-card-wrapper">
+            <a href="produto.html?slug=${product.slug}" class="product-card">
+                <div class="product-image">
+                    <img src="${imageUrl}" alt="${product.name}" loading="lazy" onerror="this.src='${getPlaceholderImage()}'">
+                    ${product.stock_status !== 'available' ? '<span class="product-badge out-of-stock">Indisponível</span>' : ''}
+                    ${product.featured ? '<span class="product-badge featured">Destaque</span>' : ''}
                 </div>
-            </div>
-        </a>
+                <div class="product-info">
+                    <h3 class="product-title">${product.name}</h3>
+                    ${description ? `<p class="product-description">${description}</p>` : ''}
+                    ${product.category_name ? `<span class="product-category">${product.category_name}</span>` : ''}
+                </div>
+            </a>
+            <a href="produto.html?slug=${product.slug}" class="btn btn-cta-card" style="display:block;text-align:center;background:#25D366;color:#fff;padding:0.75rem 1rem;border-radius:8px;text-decoration:none;font-weight:600;margin-top:0.5rem;transition:background 0.3s;">
+                Solicitar Orçamento
+            </a>
+        </div>
     `;
 }
 
@@ -121,8 +129,8 @@ async function initCategoryPage() {
         renderProductsGrid(data.products);
 
         // Configurar paginação
-        if (data.has_more) {
-            setupPagination(slug, data.page);
+        if (data.pagination && data.pagination.has_more) {
+            setupPagination(slug, data.pagination.page);
         }
 
     } catch (error) {
@@ -153,8 +161,18 @@ function updateCategoryHeader(category) {
  * Inicializar página de produto individual
  */
 async function initProductPage() {
+    const productSlug = getUrlParam('slug');
     const productId = getUrlParam('id');
-    if (!productId) {
+
+    // Debug info
+    console.log('=== Iniciando página de produto ===');
+    console.log('URL:', window.location.href);
+    console.log('Slug:', productSlug);
+    console.log('ID:', productId);
+    console.log('API Base:', API.base);
+
+    if (!productSlug && !productId) {
+        console.warn('Sem slug ou ID na URL, redirecionando para equipamentos...');
         window.location.href = 'equipamentos.html';
         return;
     }
@@ -162,20 +180,31 @@ async function initProductPage() {
     showLoading('productContent');
 
     try {
-        const product = await getProductById(productId);
+        let product;
+        if (productSlug) {
+            console.log('Buscando produto por slug:', productSlug);
+            product = await getProductBySlug(productSlug);
+        } else {
+            console.log('Buscando produto por ID:', productId);
+            product = await getProductById(productId);
+        }
+
+        console.log('Resposta da API:', product);
 
         if (!product) {
-            showError('productContent', 'Produto não encontrado.');
+            console.error('Produto não encontrado na API');
+            showError('productContent', 'Produto não encontrado. Verifique se o equipamento existe no banco de dados.');
             return;
         }
 
         document.title = `${product.name} - AlugServ`;
-        updateBreadcrumb(product.category?.name, product.name);
+        updateBreadcrumb(product.category_name, product.name);
         renderProductDetails(product);
 
     } catch (error) {
         console.error('Erro ao carregar produto:', error);
-        showError('productContent', 'Erro ao carregar produto. Tente novamente.');
+        const errorMsg = error.message || 'Erro desconhecido';
+        showError('productContent', `Erro ao carregar produto: ${errorMsg}. Verifique o console para mais detalhes.`);
     }
 }
 
@@ -188,19 +217,26 @@ function renderProductDetails(product) {
 
     const mainImage = product.image || getPlaceholderImage();
     const gallery = product.gallery || [];
+    // Descrição completa sem limite de caracteres
     const description = product.description || product.short_description || '';
     const specs = product.specs || {};
+
+    // Adicionar imagem principal à galeria se não estiver lá
+    const allImages = [mainImage, ...gallery.filter(img => img !== mainImage)];
+
+    // Guardar dados do produto para carregar relacionados
+    window.currentProduct = product;
 
     container.innerHTML = `
         <div class="product-detail-grid">
             <!-- Galeria -->
             <div class="product-gallery">
-                <div class="gallery-main">
-                    <img src="${mainImage}" alt="${product.name}" id="mainImage" onerror="this.src='${getPlaceholderImage()}'">
+                <div class="gallery-main" style="display:flex;justify-content:center;align-items:center;">
+                    <img src="${mainImage}" alt="${product.name}" id="mainImage" onerror="this.src='${getPlaceholderImage()}'" style="max-width:100%;height:auto;">
                 </div>
-                ${gallery.length > 1 ? `
-                    <div class="gallery-thumbs">
-                        ${gallery.map((img, index) => `
+                ${allImages.length > 1 ? `
+                    <div class="gallery-thumbs" style="display:flex;justify-content:center;gap:0.5rem;margin-top:1rem;">
+                        ${allImages.map((img, index) => `
                             <button class="gallery-thumb ${index === 0 ? 'active' : ''}" onclick="changeMainImage('${img}', this)">
                                 <img src="${img}" alt="${product.name} - Imagem ${index + 1}">
                             </button>
@@ -212,25 +248,22 @@ function renderProductDetails(product) {
             <!-- Informações -->
             <div class="product-details">
                 <div class="product-header">
-                    ${product.category ? `<span class="product-category-tag">${product.category.name}</span>` : ''}
+                    ${product.category_name ? `<span class="product-category-tag">${product.category_name}</span>` : ''}
                     <h1 class="product-title">${product.name}</h1>
                     ${product.sku ? `<p class="product-sku">SKU: ${product.sku}</p>` : ''}
-                </div>
-
-                <div class="product-price-box">
-                    <span class="price-label">Valor:</span>
-                    <span class="price-value">${formatPrice(product.price)}</span>
+                    ${product.brand ? `<p class="product-brand">Marca: ${product.brand}</p>` : ''}
+                    ${product.model ? `<p class="product-model">Modelo: ${product.model}</p>` : ''}
                 </div>
 
                 ${description ? `
-                    <div class="product-description">
+                    <div class="product-description" style="margin:1.5rem 0;">
                         <h3>Descrição</h3>
-                        <div class="description-content">${description}</div>
+                        <div class="description-content" style="line-height:1.7;color:#555;white-space:pre-wrap;word-wrap:break-word;">${description}</div>
                     </div>
                 ` : ''}
 
                 ${Object.keys(specs).length > 0 ? `
-                    <div class="product-specs">
+                    <div class="product-specs" style="margin:1.5rem 0;">
                         <h3>Especificações</h3>
                         <table class="specs-table">
                             ${Object.entries(specs).map(([key, value]) => `
@@ -243,19 +276,22 @@ function renderProductDetails(product) {
                     </div>
                 ` : ''}
 
-                <div class="product-actions">
-                    <a href="${getWhatsAppLink(product, WHATSAPP_NUMBERS[0])}" class="btn btn-whatsapp" target="_blank" rel="noopener">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-                        </svg>
-                        Solicitar Orçamento
-                    </a>
-                    <a href="tel:${CONTACT_PHONE}" class="btn btn-secondary">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
-                        </svg>
-                        Ligar Agora
-                    </a>
+                <div class="product-actions" style="margin-top:2rem;">
+                    <h4 style="margin-bottom:1rem;font-size:1.1rem;font-weight:600;">Solicitar Orçamento</h4>
+                    <div class="action-buttons" style="display:flex;flex-direction:column;gap:0.75rem;">
+                        <a href="${getWhatsAppLinkLouveira(product)}" class="btn btn-whatsapp" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;gap:0.5rem;padding:0.875rem 1.5rem;background:#25D366;color:#fff;border-radius:8px;text-decoration:none;font-weight:600;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                            </svg>
+                            Louveira - (19) 9944-5111
+                        </a>
+                        <a href="${getWhatsAppLinkJundiai(product)}" class="btn btn-whatsapp" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;gap:0.5rem;padding:0.875rem 1.5rem;background:#25D366;color:#fff;border-radius:8px;text-decoration:none;font-weight:600;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                            </svg>
+                            Jundiaí - (11) 9648-1527
+                        </a>
+                    </div>
                 </div>
 
                 <div class="product-share">
@@ -275,7 +311,67 @@ function renderProductDetails(product) {
                 </div>
             </div>
         </div>
+
+        <!-- CTA Section -->
+        <section class="cta-section" style="margin-top:3rem;padding:3rem 2rem;background:var(--primary, #1a1a2e);border-radius:12px;text-align:center;">
+            <h2 style="color:#fff;margin-bottom:1rem;font-size:1.75rem;">Precisa de equipamentos para sua obra?</h2>
+            <p style="color:rgba(255,255,255,0.8);margin-bottom:1.5rem;">Conte com a AlugServ para garantir eficiência, segurança e economia.</p>
+            <a href="contato.html" class="btn btn-secondary btn-lg" style="background:#f5a623;color:#1a1a2e;padding:1rem 2rem;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block;">Fale com a unidade mais próxima</a>
+        </section>
+
+        <!-- Equipamentos Relacionados -->
+        <section class="related-products" style="margin-top:3rem;">
+            <h2 style="font-size:1.5rem;margin-bottom:1.5rem;">Equipamentos Relacionados</h2>
+            <div id="relatedProductsGrid" class="products-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:1.5rem;">
+                <div class="loading-state" style="grid-column:1/-1;text-align:center;padding:2rem;">
+                    <div class="loading-spinner"></div>
+                    <p>Carregando equipamentos relacionados...</p>
+                </div>
+            </div>
+        </section>
     `;
+
+    // Carregar equipamentos relacionados
+    loadRelatedProducts(product);
+}
+
+/**
+ * Carregar equipamentos relacionados (mesma categoria)
+ */
+async function loadRelatedProducts(currentProduct) {
+    const container = document.getElementById('relatedProductsGrid');
+    if (!container) return;
+
+    try {
+        // Buscar produtos da mesma categoria
+        const categorySlug = currentProduct.category_slug ||
+            (currentProduct.category_name ? currentProduct.category_name.toLowerCase()
+                .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                .replace(/[^\w\s-]/g, '').replace(/\s+/g, '-') : null);
+
+        if (!categorySlug) {
+            container.innerHTML = '<p style="text-align:center;color:#666;">Nenhum equipamento relacionado encontrado.</p>';
+            return;
+        }
+
+        const data = await getProductsByCategory(categorySlug, 1, 5);
+
+        // Filtrar o produto atual e limitar a 4 itens
+        const relatedProducts = (data.products || [])
+            .filter(p => p.id !== currentProduct.id && p.slug !== currentProduct.slug)
+            .slice(0, 4);
+
+        if (relatedProducts.length === 0) {
+            container.innerHTML = '<p style="text-align:center;color:#666;">Nenhum equipamento relacionado encontrado.</p>';
+            return;
+        }
+
+        container.innerHTML = relatedProducts.map(product => renderProductCard(product)).join('');
+
+    } catch (error) {
+        console.error('Erro ao carregar produtos relacionados:', error);
+        container.innerHTML = '<p style="text-align:center;color:#666;">Erro ao carregar equipamentos relacionados.</p>';
+    }
 }
 
 /**
@@ -347,10 +443,14 @@ function updateBreadcrumb(categoryName, productName = null) {
     `;
 
     if (categoryName) {
+        const categorySlug = categoryName.toLowerCase()
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^\w\s-]/g, '').replace(/\s+/g, '-');
+
         if (productName) {
             html += `
                 <span class="separator">/</span>
-                <a href="categoria.html?slug=${categoryName.toLowerCase().replace(/\s+/g, '-')}">${categoryName}</a>
+                <a href="categoria.html?slug=${categorySlug}">${categoryName}</a>
                 <span class="separator">/</span>
                 <span class="current">${productName}</span>
             `;
@@ -392,7 +492,7 @@ async function loadMoreProducts(slug, page) {
             const newProducts = data.products.map(product => renderProductCard(product)).join('');
             container.insertAdjacentHTML('beforeend', newProducts);
 
-            if (!data.has_more) {
+            if (!data.pagination || !data.pagination.has_more) {
                 document.getElementById('pagination').style.display = 'none';
             } else {
                 setupPagination(slug, page);

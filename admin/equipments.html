@@ -37,6 +37,12 @@
                     </svg>
                     Categorias
                 </a></li>
+                <li><a href="users.html">
+                    <svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                    </svg>
+                    Usuários
+                </a></li>
                 <li><a href="settings.html">
                     <svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
@@ -72,12 +78,22 @@
                     </button>
                 </div>
                 <div class="card-body">
+                    <!-- Info de total e paginação -->
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+                        <span id="equipmentsInfo" style="color:#666;font-size:0.9rem;">Carregando...</span>
+                        <select id="perPageSelect" onchange="changePerPage()" style="padding:0.4rem;border-radius:4px;border:1px solid #ddd;">
+                            <option value="10">10 por página</option>
+                            <option value="25">25 por página</option>
+                            <option value="50">50 por página</option>
+                            <option value="100">100 por página</option>
+                        </select>
+                    </div>
                     <div class="table-responsive">
                         <table class="table">
                             <thead>
                                 <tr>
                                     <th>Imagem</th>
-                                    <th>Título</th>
+                                    <th>Nome</th>
                                     <th>Categoria</th>
                                     <th>Status</th>
                                     <th>Ações</th>
@@ -90,6 +106,8 @@
                             </tbody>
                         </table>
                     </div>
+                    <!-- Paginação -->
+                    <div id="paginationContainer" style="display:flex;justify-content:center;gap:0.5rem;margin-top:1rem;"></div>
                 </div>
             </div>
         </div>
@@ -107,13 +125,13 @@
                     <input type="hidden" id="equipmentId">
 
                     <div class="form-group">
-                        <label for="title">Título *</label>
-                        <input type="text" id="title" name="title" required>
+                        <label for="name">Nome *</label>
+                        <input type="text" id="name" name="name" required>
                     </div>
 
                     <div class="form-group">
-                        <label for="category">Categoria *</label>
-                        <select id="category" name="category" required>
+                        <label for="category_id">Categoria *</label>
+                        <select id="category_id" name="category_id" required>
                             <option value="">Selecione...</option>
                         </select>
                     </div>
@@ -150,13 +168,15 @@
         requireAuth();
 
         let categories = [];
+        let currentPage = 1;
+        let perPage = 25;
 
         // Load categories for select
         async function loadCategories() {
             try {
                 const data = await apiRequest('categories.php');
                 categories = data.categories || [];
-                const select = document.getElementById('category');
+                const select = document.getElementById('category_id');
                 select.innerHTML = '<option value="">Selecione...</option>' +
                     categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
             } catch (error) {
@@ -164,17 +184,73 @@
             }
         }
 
+        // Change per page
+        function changePerPage() {
+            perPage = parseInt(document.getElementById('perPageSelect').value);
+            currentPage = 1;
+            loadEquipments();
+        }
+
+        // Go to page
+        function goToPage(page) {
+            currentPage = page;
+            loadEquipments();
+        }
+
+        // Render pagination
+        function renderPagination(pagination) {
+            const container = document.getElementById('paginationContainer');
+            if (!pagination || pagination.total_pages <= 1) {
+                container.innerHTML = '';
+                return;
+            }
+
+            let html = '';
+
+            // Previous button
+            if (pagination.page > 1) {
+                html += `<button class="btn btn-sm btn-secondary" onclick="goToPage(${pagination.page - 1})">&laquo; Anterior</button>`;
+            }
+
+            // Page numbers
+            const start = Math.max(1, pagination.page - 2);
+            const end = Math.min(pagination.total_pages, pagination.page + 2);
+
+            if (start > 1) {
+                html += `<button class="btn btn-sm btn-secondary" onclick="goToPage(1)">1</button>`;
+                if (start > 2) html += `<span style="padding:0.5rem;">...</span>`;
+            }
+
+            for (let i = start; i <= end; i++) {
+                const isActive = i === pagination.page;
+                html += `<button class="btn btn-sm ${isActive ? 'btn-primary' : 'btn-secondary'}" onclick="goToPage(${i})">${i}</button>`;
+            }
+
+            if (end < pagination.total_pages) {
+                if (end < pagination.total_pages - 1) html += `<span style="padding:0.5rem;">...</span>`;
+                html += `<button class="btn btn-sm btn-secondary" onclick="goToPage(${pagination.total_pages})">${pagination.total_pages}</button>`;
+            }
+
+            // Next button
+            if (pagination.page < pagination.total_pages) {
+                html += `<button class="btn btn-sm btn-secondary" onclick="goToPage(${pagination.page + 1})">Próximo &raquo;</button>`;
+            }
+
+            container.innerHTML = html;
+        }
+
         // Load equipments
         async function loadEquipments() {
             try {
-                const data = await apiRequest('equipments.php');
+                const data = await apiRequest(`equipments.php?page=${currentPage}&per_page=${perPage}`);
                 const tbody = document.getElementById('equipmentsBody');
+                const info = document.getElementById('equipmentsInfo');
 
                 if (data.equipments && data.equipments.length > 0) {
                     tbody.innerHTML = data.equipments.map(item => `
                         <tr>
-                            <td><img src="${item.image || '../assets/images/logo.png'}" alt="${item.title}"></td>
-                            <td>${item.title}</td>
+                            <td><img src="${item.image || '../assets/images/logo.png'}" alt="${item.name}" style="width:60px;height:60px;object-fit:cover;border-radius:4px;"></td>
+                            <td>${item.name}</td>
                             <td>${item.category_name || '-'}</td>
                             <td><span class="badge badge-${item.status === 'active' ? 'success' : 'danger'}">${item.status === 'active' ? 'Ativo' : 'Inativo'}</span></td>
                             <td>
@@ -184,8 +260,18 @@
                         </tr>
                     `).join('');
                     initializeTableActions();
+
+                    // Update info
+                    if (data.pagination) {
+                        const start = (data.pagination.page - 1) * data.pagination.per_page + 1;
+                        const end = Math.min(start + data.equipments.length - 1, data.pagination.total);
+                        info.textContent = `Mostrando ${start}-${end} de ${data.pagination.total} equipamentos`;
+                        renderPagination(data.pagination);
+                    }
                 } else {
                     tbody.innerHTML = '<tr><td colspan="5" class="text-center">Nenhum equipamento cadastrado</td></tr>';
+                    info.textContent = '0 equipamentos';
+                    document.getElementById('paginationContainer').innerHTML = '';
                 }
             } catch (error) {
                 showAlert('Erro ao carregar equipamentos', 'error');
@@ -200,8 +286,8 @@
 
                 document.getElementById('modalTitle').textContent = 'Editar Equipamento';
                 document.getElementById('equipmentId').value = item.id;
-                document.getElementById('title').value = item.title;
-                document.getElementById('category').value = item.category_id;
+                document.getElementById('name').value = item.name;
+                document.getElementById('category_id').value = item.category_id;
                 document.getElementById('description').value = item.description || '';
                 document.getElementById('status').value = item.status;
 
@@ -221,12 +307,16 @@
             const id = document.getElementById('equipmentId').value;
             const formData = new FormData(document.getElementById('equipmentForm'));
 
+            // Para PUT, usar POST com _method (PHP não processa FormData em PUT)
+            if (id) {
+                formData.append('_method', 'PUT');
+            }
+
             try {
-                const method = id ? 'PUT' : 'POST';
                 const endpoint = id ? `equipments.php?id=${id}` : 'equipments.php';
 
                 await apiRequest(endpoint, {
-                    method,
+                    method: 'POST',
                     body: formData
                 });
 
@@ -248,6 +338,7 @@
         }
 
         // Initialize
+        document.getElementById('perPageSelect').value = perPage;
         loadCategories();
         loadEquipments();
     </script>

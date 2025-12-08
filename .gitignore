@@ -1,0 +1,29 @@
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Uploads directory (keep structure, ignore files)
+uploads/*
+!uploads/.gitkeep
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Dependencies
+node_modules/
+vendor/
+
+# Build
+dist/
+build/
