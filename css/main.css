@@ -239,38 +239,32 @@ ul, ol {
     background-color: var(--secondary);
     border-bottom: 1px solid var(--border);
     padding: 0.75rem 0;
+    overflow-x: auto;
 }
 
 .category-nav .container {
     display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 1.5rem 1.5rem;
+    justify-content: flex-start;
+    gap: 2rem;
+    min-width: max-content;
 }
 
 .category-nav a {
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
     color: var(--primary);
     font-size: 0.875rem;
     white-space: nowrap;
     transition: var(--transition);
+    font-weight: 500;
 }
 
 .category-nav a:hover {
     color: var(--primary-hover);
 }
 
-.category-nav svg {
-    width: 12px;
-    height: 12px;
-    opacity: 0.5;
-    transition: var(--transition);
-}
-
-.category-nav a:hover svg {
-    opacity: 1;
+@media (max-width: 768px) {
+    .category-nav {
+        display: none;
+    }
 }
 
 /* ===== HERO SECTION ===== */
