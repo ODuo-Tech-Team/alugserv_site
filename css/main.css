@@ -244,9 +244,12 @@ ul, ol {
 
 .category-nav .container {
     display: flex;
-    justify-content: flex-start;
-    gap: 2rem;
-    min-width: max-content;
+    flex-wrap: nowrap;
+    justify-content: center;
+    gap: 1.5rem;
+    width: max-content;
+    max-width: none;
+    margin: 0 auto;
 }
 
 .category-nav a {
