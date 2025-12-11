@@ -216,33 +216,20 @@ function renderProductDetails(product) {
     if (!container) return;
 
     const mainImage = product.image || getPlaceholderImage();
-    const gallery = product.gallery || [];
     // Descrição completa sem limite de caracteres
     const description = product.description || product.short_description || '';
     const specs = product.specs || {};
-
-    // Adicionar imagem principal à galeria se não estiver lá
-    const allImages = [mainImage, ...gallery.filter(img => img !== mainImage)];
 
     // Guardar dados do produto para carregar relacionados
     window.currentProduct = product;
 
     container.innerHTML = `
         <div class="product-detail-grid">
-            <!-- Galeria -->
+            <!-- Imagem do Produto -->
             <div class="product-gallery">
                 <div class="gallery-main" style="display:flex;justify-content:center;align-items:center;">
                     <img src="${mainImage}" alt="${product.name}" id="mainImage" onerror="this.src='${getPlaceholderImage()}'" style="max-width:100%;height:auto;">
                 </div>
-                ${allImages.length > 1 ? `
-                    <div class="gallery-thumbs" style="display:flex;justify-content:center;gap:0.5rem;margin-top:1rem;">
-                        ${allImages.map((img, index) => `
-                            <button class="gallery-thumb ${index === 0 ? 'active' : ''}" onclick="changeMainImage('${img}', this)">
-                                <img src="${img}" alt="${product.name} - Imagem ${index + 1}">
-                            </button>
-                        `).join('')}
-                    </div>
-                ` : ''}
             </div>
 
             <!-- Informações -->
@@ -377,21 +364,6 @@ async function loadRelatedProducts(currentProduct) {
 /**
  * Mudar imagem principal da galeria
  */
-function changeMainImage(imageUrl, thumbElement) {
-    const mainImage = document.getElementById('mainImage');
-    if (mainImage) {
-        mainImage.src = imageUrl;
-    }
-
-    // Atualizar thumb ativa
-    document.querySelectorAll('.gallery-thumb').forEach(thumb => {
-        thumb.classList.remove('active');
-    });
-    if (thumbElement) {
-        thumbElement.classList.add('active');
-    }
-}
-
 // ===== UI HELPERS =====
 
 /**

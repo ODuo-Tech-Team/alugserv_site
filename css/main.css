@@ -553,6 +553,7 @@ section {
     margin: 0 auto;
     position: relative;
     overflow: hidden;
+    padding: 0 1rem;
 }
 
 .carousel-track {
@@ -564,6 +565,21 @@ section {
 .carousel-slide {
     flex: 0 0 100%;
     padding: 0.5rem;
+    box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+    .carousel-container {
+        padding: 0;
+    }
+
+    .carousel-slide {
+        padding: 0;
+    }
+
+    .carousel-track {
+        gap: 0;
+    }
 }
 
 .review-card {

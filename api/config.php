@@ -32,7 +32,18 @@ define('DB_CHARSET', getenv('DB_CHARSET') ?: 'utf8mb4');
 // ===== CONFIGURAÇÕES GERAIS =====
 define('ITEMS_PER_PAGE', 12);
 define('UPLOAD_DIR', __DIR__ . '/../uploads/');
-define('UPLOAD_URL', '/uploads/');
+
+// Detectar base path automaticamente
+$basePath = '';
+if (isset($_SERVER['REQUEST_URI'])) {
+    $scriptPath = dirname($_SERVER['SCRIPT_NAME']);
+    // Remove /api se existir
+    $basePath = str_replace('/api', '', $scriptPath);
+    // Garantir que termina com /
+    $basePath = rtrim($basePath, '/') . '/';
+}
+define('UPLOAD_URL', $basePath . 'uploads/');
+
 define('MAX_FILE_SIZE', 5 * 1024 * 1024); // 5MB
 define('ALLOWED_EXTENSIONS', ['jpg', 'jpeg', 'png', 'gif', 'webp']);
 define('SESSION_DURATION', 86400 * 7); // 7 dias
@@ -283,36 +294,52 @@ function getRequestMethod() {
  * Upload de arquivo
  */
 function uploadFile($file, $subdir = '') {
+    error_log("=== UPLOAD DEBUG ===");
+    error_log("File info: " . print_r($file, true));
+    error_log("Subdir: " . $subdir);
+
     if (!isset($file['tmp_name']) || !is_uploaded_file($file['tmp_name'])) {
+        error_log("Arquivo não foi enviado ou não é válido");
         return null;
     }
 
     // Verificar tamanho
     if ($file['size'] > MAX_FILE_SIZE) {
+        error_log("Arquivo muito grande: " . $file['size']);
         throw new Exception('Arquivo muito grande. Máximo: ' . (MAX_FILE_SIZE / 1024 / 1024) . 'MB');
     }
 
     // Verificar extensão
     $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+    error_log("Extensão: " . $ext);
     if (!in_array($ext, ALLOWED_EXTENSIONS)) {
+        error_log("Extensão não permitida: " . $ext);
         throw new Exception('Tipo de arquivo não permitido');
     }
 
     // Criar diretório se não existir
     $uploadPath = UPLOAD_DIR . $subdir;
+    error_log("Upload path: " . $uploadPath);
     if (!is_dir($uploadPath)) {
+        error_log("Criando diretório: " . $uploadPath);
         mkdir($uploadPath, 0755, true);
     }
 
     // Gerar nome único
     $filename = uniqid() . '_' . time() . '.' . $ext;
     $filepath = $uploadPath . '/' . $filename;
+    error_log("Filepath: " . $filepath);
 
     if (!move_uploaded_file($file['tmp_name'], $filepath)) {
+        error_log("Erro ao mover arquivo de " . $file['tmp_name'] . " para " . $filepath);
         throw new Exception('Erro ao salvar arquivo');
     }
 
-    return UPLOAD_URL . $subdir . '/' . $filename;
+    $url = UPLOAD_URL . $subdir . '/' . $filename;
+    error_log("URL gerada: " . $url);
+    error_log("=== FIM UPLOAD DEBUG ===");
+
+    return $url;
 }
 
 /**
